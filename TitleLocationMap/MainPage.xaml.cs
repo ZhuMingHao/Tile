@@ -17,6 +17,8 @@ using Windows.Storage;
 using System.Threading.Tasks;
 using Windows.Storage.Streams;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using static TitleLocationMap.TileManager;
 
 
 
@@ -30,13 +32,16 @@ namespace TitleLocationMap
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        private TileManager manager;
 
         public MainPage()
         {
             this.InitializeComponent();
             //  AddLocalMapTileSource();
             // LoadMap();
+            manager = new TileManager();
             AddMap();
+
         }
         private void AddLocalMapTileSource()
         {
@@ -118,16 +123,10 @@ namespace TitleLocationMap
         private async void HandleUriRequestAsync(HttpMapTileDataSource sender,
            MapTileUriRequestedEventArgs args)
         {
-            // Get a deferral to do something asynchronously.
-            // Omit this line if you don't have to do something asynchronously.
             var deferral = args.Request.GetDeferral();
-            // Get the custom Uri.
-            var uri = await GetCustomUriAsync(args.X, args.Y, args.ZoomLevel);
-            //Debug.Write(args.X+"---" + args.Y + "---" + args.ZoomLevel);
-            // Specify the Uri in the Uri property of the MapTileUriRequest.
-            args.Request.Uri = uri;
-            // Notify the app that the custom Uri is ready.
-            // Omit this line also if you don't have to do something asynchronously.
+            var tile = manager.convert_bingTile_to_baidu(args.X, args.Y, args.ZoomLevel);
+            var uri = await GetCustomUriAsync(tile.x, tile.y, tile.z);
+            args.Request.Uri = uri;       
             deferral.Complete();
         }
         // Create the custom Uri.
@@ -142,10 +141,59 @@ namespace TitleLocationMap
             string style = "pl";
             string scaler = "1";
             var cM = j[Math.Abs(x + y) % j.Length] + "?qt=tile&x="
-        + (x+"").Replace("","M") + "&y="
-        + (y+"" ).Replace("","M")+ "&z=" + zoomLevel + "&styles=" + style + "&scaler=" + scaler
-        + "&udt=" + udt;
+       + Regex.Replace((x + ""), @"/-/gi", "M") + "&y="
+       + Regex.Replace((y + ""), @"/-/gi", "M") + "&z=" + zoomLevel + "&styles=" + style + "&scaler=" + scaler
+       + "&udt=" + udt;
             return await Task.Run(() => new Uri(cM));
+        }
+
+        //test Code
+        //private Uri getUrl(int x, int y, int z)
+        //{
+        //    string[] j = { "http://online0.map.bdimg.com/tile/",
+        //    "http://online1.map.bdimg.com/tile/",
+        //    "http://online2.map.bdimg.com/tile/",
+        //    "http://online3.map.bdimg.com/tile/",
+        //    "http://online4.map.bdimg.com/tile/" };
+        //    string udt = "20161103";
+        //    string style = "pl";
+        //    string scaler = "1";
+        //    var cM = j[Math.Abs(x + y) % j.Length] + "?qt=tile&x="
+        //+ Regex.Replace((x + ""), @"/-/gi", "M") + "&y="
+        //+ Regex.Replace((y + ""), @"/-/gi", "M") + "&z=" + z + "&styles=" + style + "&scaler=" + scaler
+        //+ "&udt=" + udt;
+        //  cM = Regex.Replace(cM, @"/-(\d+)/gi", "M$1");
+        //    return new Uri(cM);
+
+        //}
+        //瓦块坐标转成quakey
+        private string tileToQuadkey(int x_tile, int y_tile, int z_tile)
+        {
+
+            string index = "";
+
+            for (var z = z_tile; z > 0; z--)
+            {
+
+                var b = 0;
+
+                var mask = 1 << (z - 1);
+
+                if ((x_tile & mask) != 0) b++;
+
+                if ((y_tile & mask) != 0) b += 2;
+
+                index += b.ToString();
+
+            }
+
+            return index;
+
+        }
+        private void MyMapControl_MapTapped(MapControl sender, MapInputEventArgs args)
+        {
+            var tile = manager.getTile(args.Location.Position.Longitude, args.Location.Position.Latitude, (int)MyMapControl.ZoomLevel);
+            // var url = getUrl(tile.x, tile.y, tile.z);
         }
     }
 }

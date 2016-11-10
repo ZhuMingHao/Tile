@@ -10,7 +10,8 @@
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <maps:MapControl Name="MyMapControl"
                          MapServiceToken=" RhDntSzcwUCARbSzOk8N~LjoVCpIAxJyabXwyYSL2mw~Asz_4gv_wNboJ0N9nqW8hFBGBriGg8a4Poc7Xowz1S3dgNx9AKWGqXFKy8F8rkG5"
-                         ZoomLevel="12">
+                         ZoomLevel="12"
+                         MapTapped="MyMapControl_MapTapped">
         </maps:MapControl>
 </Grid>
 </Page>
